@@ -34,7 +34,7 @@ export function ConnectWalletButton() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+        <Button className="gap-2 bg-[#1f4140] hover:bg-[#183736]">
           <Wallet className="h-4 w-4" />
           Connect
         </Button>
