@@ -62,7 +62,7 @@ export function useIPFSUpload() {
     }
 
     // Check file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    const maxSize = 50 * 1024 * 1024; 
     if (file.size > maxSize) {
       return 'File too large. Please upload videos under 50MB.';
     }
@@ -89,11 +89,7 @@ export function useIPFSUpload() {
       video.src = URL.createObjectURL(file);
     });
   };
-
-  // Fallback upload method using public IPFS gateways
   const uploadToPublicIPFS = async (file: File): Promise<UploadResult> => {
-    // For now, we'll simulate an upload since public gateways require different setup
-    // In a real implementation, you'd use services like Web3.Storage or local IPFS
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         // Simulate upload with a mock hash

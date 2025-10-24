@@ -6,22 +6,24 @@ import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { IPFSVideoPlayer } from "@/components/ipfs-video-player"
 import { formatTimeRemaining, getBattleStatus, useBattle } from "@/hooks"
 import { Play, Clock, Trophy, Users, Vote, UserPlus } from "lucide-react"
 import { useReadContract } from "wagmi"
 import { CLIPCLASH_CONTRACT_ADDRESS } from "@/hooks/contractAddress"
 import { CLIPCLASH_CONTRACT_ABI } from "@/hooks/contractAbi"
+import { VoteModal } from "@/components/vote-modal"
 
 import { Battle } from "@/hooks"
 
 export type EnhancedBattleCardProps = {
   battle: Battle
+  onJoin?: () => void
 }
 
-export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
+export function EnhancedBattleCard({ battle, onJoin }: EnhancedBattleCardProps) {
   const [open, setOpen] = useState<false | "left" | "right">(false)
+  const [showVoteModal, setShowVoteModal] = useState(false)
+  const [selectedCreator, setSelectedCreator] = useState<{ address: string; name: string } | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const { voteOnBattle, joinExistingBattle, isCreating } = useBattle()
 
@@ -59,26 +61,26 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
   const entryFeeFormatted = Number(battle.entryFee) / 1e18
   const prizePool = entryFeeFormatted * 2 // 2x entry fee
 
-  const handleVote = async (creator: string) => {
-    try {
-      await voteOnBattle(battle.battleId, creator, BigInt(1000000000000000000)) // 1 token vote
-    } catch (error) {
-      console.error('Vote failed:', error)
-    }
+  const handleVote = (creatorAddress: string, creatorName: string) => {
+    setSelectedCreator({ address: creatorAddress, name: creatorName })
+    setShowVoteModal(true)
   }
 
   const handleJoinBattle = async () => {
-    try {
-      await joinExistingBattle({
-        battleId: battle.battleId,
-        ipfsHash2: "bafybeice35t3mzo7yqbzwbq3vsw3cfm6lx7s4fbua33b2pknl5e5mk77ga" // TODO: Get from user upload
-      })
-    } catch (error) {
-      console.error('Join battle failed:', error)
+    if (onJoin) {
+      onJoin()
+    } else {
+      try {
+        await joinExistingBattle({
+          battleId: battle.battleId,
+          ipfsHash2: "bafybeice35t3mzo7yqbzwbq3vsw3cfm6lx7s4fbua33b2pknl5e5mk77ga" // TODO: Get from user upload
+        })
+      } catch (error) {
+        console.error('Join battle failed:', error)
+      }
     }
   }
 
-  // Auto-close after 15s; if viewing left, advance to right next
   useEffect(() => {
     if (!open) return
     const el = videoRef.current
@@ -115,33 +117,7 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
         </Badge>
       </div>
 
-      {/* Video Preview */}
-      {battle.ipfsHash1 && (
-        <div className="mb-4 relative aspect-video overflow-hidden rounded-lg border bg-muted">
-          <IPFSVideoPlayer
-            ipfsHash={battle.ipfsHash1}
-            className="w-full h-full"
-            controls={false}
-            muted
-            poster={`https://gateway.pinata.cloud/ipfs/${battle.ipfsHash1}`}
-          />
-          <button 
-            onClick={(e) => { e.preventDefault(); setOpen("left") }}
-            className="absolute inset-0 bg-black/20 flex items-center justify-center hover:bg-black/30 transition-colors"
-          >
-            <div className="size-12 grid place-items-center rounded-full border bg-background/70">
-              <Play className="h-6 w-6" />
-            </div>
-          </button>
-          <div className="absolute bottom-2 left-2 right-2">
-            <div className="bg-black/70 text-white text-xs p-2 rounded">
-              <p className="font-bold">{creator1Name} vs {creator2Name}</p>
-              <p>{battle.category} • {total} votes</p>
-            </div>
-          </div>
-        </div>
-      )}
-
+     
       {/* Contestants */}
       <div className="flex flex-col gap-4">
         <ContestantRow
@@ -178,10 +154,17 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
       {/* Footer */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {battle.timeRemaining && battle.timeRemaining > 0 ? (
+          {"endTime" in battle && (battle as any).endTime && Date.now() < new Date((battle as any).endTime).getTime() ? (
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" />
-              {formatTimeRemaining(battle.timeRemaining)}
+              {formatTimeRemaining(
+                Math.max(
+                  0,
+                  Math.floor(
+                    (new Date((battle as any).endTime).getTime() - Date.now()) / 1000
+                  )
+                )
+              )}
             </Badge>
           ) : (
             <Badge variant="outline" className="gap-1">
@@ -199,11 +182,11 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
         </div>
         <div className="flex gap-2">
           {status === "live" && (
-            <>
+            <>  
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => handleVote(battle.creator1)}
+                onClick={() => handleVote(battle.creator1, creator1Name)}
                 disabled={isCreating}
                 className="gap-1"
               >
@@ -214,7 +197,7 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  onClick={() => handleVote(battle.creator2)}
+                  onClick={() => handleVote(battle.creator2, creator2Name)}
                   disabled={isCreating}
                   className="gap-1"
                 >
@@ -222,7 +205,7 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
                   Vote {creator2Name}
                 </Button>
               )}
-              {battle.creator2 === "0x0000000000000000000000000000000000000000" && (
+              {battle.creator2 === "0x0000000000000000000000000000000000000000" && onJoin && (
                 <Button 
                   size="sm" 
                   className="bg-[#1f4140] text-white hover:bg-[#183736] gap-1"
@@ -248,51 +231,20 @@ export function EnhancedBattleCard({ battle }: EnhancedBattleCardProps) {
         </div>
       </div>
 
-      {/* Video Dialog */}
-      <Dialog open={Boolean(open)} onOpenChange={(v) => setOpen(v ? (open || "left") : false)}>
-        <DialogContent className="p-0 sm:max-w-lg">
-          <DialogHeader className="px-4 pt-4">
-            <DialogTitle className="text-base">
-              {open === "left" ? creator1Name : creator2Name}
-              <span className="text-xs text-muted-foreground">
-                {open === "left" ? `@${creator1Name.toLowerCase()}` : `@${creator2Name.toLowerCase()}`}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="w-full">
-            {open === "left" && battle.ipfsHash1 ? (
-              <IPFSVideoPlayer
-                ipfsHash={battle.ipfsHash1}
-                className="w-full h-64"
-                controls={false}
-                autoPlay
-                muted
-              />
-            ) : open === "right" && battle.ipfsHash2 ? (
-              <IPFSVideoPlayer
-                ipfsHash={battle.ipfsHash2}
-                className="w-full h-64"
-                controls={false}
-                autoPlay
-                muted
-              />
-            ) : (
-              <div className="w-full h-64 bg-muted flex items-center justify-center">
-                <p className="text-muted-foreground">No video available</p>
-              </div>
-            )}
-            <div className="flex items-center justify-between p-3 border-t">
-              <Badge variant="outline">15s Preview</Badge>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={(e) => { e.preventDefault(); setOpen(false) }}>Close</Button>
-                {open === "left" && battle.ipfsHash2 && (
-                  <Button size="sm" className="bg-[#1f4140] text-white" onClick={(e) => { e.preventDefault(); setOpen("right") }}>Next</Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Vote Modal */}
+      {selectedCreator && (
+        <VoteModal
+          open={showVoteModal}
+          onOpenChange={setShowVoteModal}
+          battleId={battle.battleId}
+          creator={selectedCreator.address}
+          creatorName={selectedCreator.name}
+          onSuccess={() => {
+            // Refetch battle data after successful vote
+            window.location.reload()
+          }}
+        />
+      )}
     </Link>
   )
 }

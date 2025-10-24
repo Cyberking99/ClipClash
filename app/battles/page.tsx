@@ -6,6 +6,7 @@ import { Filter, FlameIcon as Fire, Flame, Mic, Music, ThumbsUp, Trophy, Users, 
 import { EnhancedBattleCard } from "@/components/enhanced-battle-card"
 import { useBattlesList, getBattleStatus } from "@/hooks"
 import { useState } from "react"
+import { useAccount } from "wagmi"
 
 // Categories with actual icon components
 const categories = [
@@ -19,6 +20,7 @@ const categories = [
 export default function BattlesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [activeTab, setActiveTab] = useState("live")
+  const { address } = useAccount()
   
   // Get real battle data
   const { battles, isLoading, error, refetch } = useBattlesList(20)
@@ -100,7 +102,16 @@ export default function BattlesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {liveBattles.map((battle) => (
-                <EnhancedBattleCard key={battle.battleId.toString()} battle={battle} />
+                <EnhancedBattleCard 
+                  key={battle.battleId.toString()} 
+                  battle={battle}
+                  onJoin={
+                    // Only show join button if user is not the creator
+                    battle.creator1.toLowerCase() !== address?.toLowerCase() 
+                      ? () => console.log('Join battle:', battle.battleId)
+                      : undefined
+                  }
+                />
               ))}
             </div>
           )}
@@ -125,7 +136,16 @@ export default function BattlesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {upcomingBattles.map((battle) => (
-                <EnhancedBattleCard key={battle.battleId.toString()} battle={battle} />
+                <EnhancedBattleCard 
+                  key={battle.battleId.toString()} 
+                  battle={battle}
+                  onJoin={
+                    // Only show join button if user is not the creator
+                    battle.creator1.toLowerCase() !== address?.toLowerCase() 
+                      ? () => console.log('Join battle:', battle.battleId)
+                      : undefined
+                  }
+                />
               ))}
             </div>
           )}
@@ -149,7 +169,16 @@ export default function BattlesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {completedBattles.map((battle) => (
-                <EnhancedBattleCard key={battle.battleId.toString()} battle={battle} />
+                <EnhancedBattleCard 
+                  key={battle.battleId.toString()} 
+                  battle={battle}
+                  onJoin={
+                    // Only show join button if user is not the creator
+                    battle.creator1.toLowerCase() !== address?.toLowerCase() 
+                      ? () => console.log('Join battle:', battle.battleId)
+                      : undefined
+                  }
+                />
               ))}
             </div>
           )}

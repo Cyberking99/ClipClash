@@ -8,6 +8,7 @@ import { Swords, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ConnectWalletButton } from "@/components/connect-wallet-button"
 import { TokenBalance } from "@/components/token-balance"
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -79,26 +80,42 @@ export default function Navigation() {
         <div className="flex items-center gap-3">
           <TokenBalance />
           <ConnectWalletButton />
+          {/* Hidden RainbowKit button for modal functionality */}
+          <div className="hidden">
+            <ConnectButton />
+          </div>
         </div>
       </div>
 
       {/* Mobile Navigation */}
       {isOpen && (
         <div className="fixed inset-0 top-16 z-50 grid h-[calc(100vh-4rem)] grid-flow-row auto-rows-max overflow-auto p-6 pb-32 animate-in md:hidden bg-background border-t">
-          <div className="grid gap-3">
-            {routes.map((route) => (
-              <Link
-                key={route.href}
-                href={route.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent",
-                  route.active ? "bg-accent" : "transparent",
-                )}
-                onClick={() => setIsOpen(false)}
-              >
-                {route.label}
-              </Link>
-            ))}
+          <div className="grid gap-4">
+            {/* Mobile Wallet Section */}
+            <div className="flex flex-col gap-3 p-4 bg-muted rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Wallet</span>
+                <ConnectWalletButton />
+              </div>
+              <TokenBalance />
+            </div>
+            
+            {/* Mobile Navigation Links */}
+            <div className="grid gap-3">
+              {routes.map((route) => (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent",
+                    route.active ? "bg-accent" : "transparent",
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {route.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}

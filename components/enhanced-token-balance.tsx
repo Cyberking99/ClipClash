@@ -192,9 +192,9 @@ export function EnhancedTokenBalance({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
-                {tokenName}
+                {typeof tokenName === 'string' ? tokenName : String(tokenName)}
               </Badge>
-              {decimals && (
+              {typeof decimals === 'number' && (
                 <Badge variant="secondary" className="text-xs">
                   {decimals} decimals
                 </Badge>
@@ -235,11 +235,11 @@ export function EnhancedTokenBalance({
           <div className="space-y-1">
             <p className="font-medium">Your {tokenSymbol} token balance</p>
             <p className="text-xs text-muted-foreground">
-              {tokenName} • {decimals} decimals
+              {typeof tokenName === 'string' ? tokenName : String(tokenName)} • {typeof decimals === 'number' ? decimals : String(decimals)} decimals
             </p>
-            {rawBalance && (
+            {!!rawBalance && (
               <p className="text-xs text-muted-foreground font-mono">
-                Raw: {rawBalance.toString()}
+                Raw: {String(rawBalance)}
               </p>
             )}
           </div>

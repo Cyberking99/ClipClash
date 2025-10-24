@@ -12,12 +12,12 @@ import { useState } from "react"
 export default function Landing() {
   const { address, isConnected } = useAccount()
   const [showRegisterModal, setShowRegisterModal] = useState(false)
-  
+
   // Get battle data
-  const { battleCount, isLoading: isBattleLoading } = useBattle()
-  
+  const { battleCount } = useBattle()
+
   // Get leaderboard data
-  const { totalUsers: leaderboardUsers, isLoading: isLeaderboardLoading } = useLeaderboard()
+  const { totalUsers: leaderboardUsers } = useLeaderboard()
   return (
     <div className="min-h-screen bg-[#f9f8f8]">
       {/* Header with wallet connection */}

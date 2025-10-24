@@ -61,6 +61,7 @@ export type BattleCreationStep =
   | 'checking-allowance'
   | 'approving-tokens'
   | 'creating-battle'
+  | 'joining-battle'
   | 'waiting-confirmation'
   | 'success'
   | 'error';
@@ -90,7 +91,6 @@ export function useBattle() {
     },
   });
 
-  // Note: Registration check is handled in the upload page using useUser hook
 
   // Check token allowance
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
@@ -158,8 +158,7 @@ export function useBattle() {
         console.log('Approval tx:', approveHash);
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
         console.log('Approval confirmed');
-        
-        // Refetch allowance to ensure it's updated
+       
         await refetchAllowance();
       }
 
@@ -176,13 +175,13 @@ export function useBattle() {
 
       console.log('Battle creation tx:', hash);
 
-       // Step 4: Wait for confirmation
+       
       setCurrentStep('waiting-confirmation');
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       console.log('Battle created, receipt:', receipt);
 
-       // Step 5: Extract battleId from event
-      let battleId = hash; // Fallback to tx hash
+     
+      let battleId = hash; 
       
       for (const log of receipt.logs) {
         try {
@@ -247,10 +246,43 @@ export function useBattle() {
       throw new Error(err);
     }
     
-     setCurrentStep('creating-battle');
+    setCurrentStep('checking-allowance');
     setError(null);
     
     try {
+      const battleData = await publicClient.readContract({
+        address: CLIPCLASH_CONTRACT_ADDRESS,
+        abi: CLIPCLASH_CONTRACT_ABI,
+        functionName: 'battles',
+        args: [params.battleId],
+      });
+
+      const entryFee = battleData[6]; 
+      
+      // Check current allowance
+      const currentAllowance = await publicClient.readContract({
+        address: CLIP_TOKEN_ADDRESS,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [address, CLIPCLASH_CONTRACT_ADDRESS],
+      });
+
+      // If allowance is insufficient, approve tokens
+      if (currentAllowance < entryFee) {
+        setCurrentStep('approving-tokens');
+        
+        const approveHash = await approveAsync({
+          address: CLIP_TOKEN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [CLIPCLASH_CONTRACT_ADDRESS, entryFee],
+        });
+
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      }
+
+      setCurrentStep('creating-battle');
+      
       const hash = await joinBattleAsync({
         address: CLIPCLASH_CONTRACT_ADDRESS,
         abi: CLIPCLASH_CONTRACT_ABI,
@@ -266,7 +298,24 @@ export function useBattle() {
       
     } catch (err: any) {
       setCurrentStep('error');
-      const errorMessage = err.message || 'Failed to join battle';
+      
+    
+      let errorMessage = 'Failed to join battle';
+      
+      if (err.message) {
+        if (err.message.includes('User rejected')) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (err.message.includes('insufficient funds')) {
+          errorMessage = 'Insufficient CLASH tokens in wallet';
+        } else if (err.message.includes('User not registered')) {
+          errorMessage = 'Please complete registration first';
+        } else if (err.message.includes('exceeds allowance')) {
+          errorMessage = 'Token approval failed. Please try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -322,10 +371,34 @@ export function useBattle() {
       throw new Error(err);
     }
     
-    setCurrentStep('waiting-confirmation');
+    setCurrentStep('checking-allowance');
     setError(null);
     
     try {
+      // Check current allowance
+      const currentAllowance = await publicClient.readContract({
+        address: CLIP_TOKEN_ADDRESS,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [address, CLIPCLASH_CONTRACT_ADDRESS],
+      });
+
+      // If allowance is insufficient, approve tokens
+      if (currentAllowance < amount) {
+        setCurrentStep('approving-tokens');
+        
+        const approveHash = await approveAsync({
+          address: CLIP_TOKEN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [CLIPCLASH_CONTRACT_ADDRESS, amount],
+        });
+
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      }
+
+      setCurrentStep('waiting-confirmation');
+      
       const hash = await voteAsync({
         address: CLIPCLASH_CONTRACT_ADDRESS,
         abi: CLIPCLASH_CONTRACT_ABI,
@@ -340,7 +413,24 @@ export function useBattle() {
       
     } catch (err: any) {
       setCurrentStep('error');
-      const errorMessage = err.message || 'Failed to vote on battle';
+      
+      // Parse error message for better UX
+      let errorMessage = 'Failed to vote';
+      
+      if (err.message) {
+        if (err.message.includes('User rejected')) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (err.message.includes('insufficient funds')) {
+          errorMessage = 'Insufficient CLASH tokens in wallet';
+        } else if (err.message.includes('User not registered')) {
+          errorMessage = 'Please complete registration first';
+        } else if (err.message.includes('exceeds allowance')) {
+          errorMessage = 'Token approval failed. Please try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -433,8 +523,6 @@ export function useBattlesList(limit: number = 20) {
       const totalBattles = Number(battleCount);
       const battlePromises = [];
       
-      // Fetch battles in reverse order (newest first)
-      // Battle IDs start from 1, not 0
       for (let i = totalBattles; i >= 1; i--) {
         battlePromises.push(fetchBattleById(i));
       }
@@ -532,20 +620,18 @@ export function getBattleStatus(battle: Battle): 'live' | 'upcoming' | 'complete
   });
   
   if (endTime > now) {
-    return 'live'; // Battle is active and has time remaining
+    return 'live'; 
   } else {
-    return 'completed'; // Battle time has ended
+    return 'completed'; 
   }
 }
 
-// Utility function to calculate time remaining
 export function getTimeRemaining(battle: Battle): number | null {
   const now = Math.floor(Date.now() / 1000);
   const endTime = Number(battle.votingEndTime);
   return Math.max(0, endTime - now);
 }
 
-// Utility function to format time remaining
 export function formatTimeRemaining(seconds: number): string {
   if (seconds <= 0) return 'Ended';
   
