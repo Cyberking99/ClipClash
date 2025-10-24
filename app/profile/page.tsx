@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAccount } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,14 +10,66 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Award, Copy, ExternalLink, Heart, MessageCircle, Settings, Share2, Swords, Trophy, Users } from "lucide-react"
 import { VideoCard } from "@/components/video-card"
 import { Progress } from "@/components/ui/progress"
+import { useUser, useBattle } from "@/hooks"
 
 export default function ProfilePage() {
+  const { address, isConnected } = useAccount()
   const [copied, setCopied] = useState(false)
+  
+  // Get user data from blockchain
+  const { userProfile, isLoading: isUserLoading } = useUser()
+  const { creatorBattles } = useBattle()
 
   const copyAddress = () => {
-    navigator.clipboard.writeText("0x1a2...3b4c")
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (address) {
+      navigator.clipboard.writeText(address)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  // Calculate win rate
+  const winRate = userProfile && userProfile.totalBattles > 0 
+    ? Math.round((Number(userProfile.totalWins) / Number(userProfile.totalBattles)) * 100)
+    : 0
+
+  // Get user initials for avatar
+  const getInitials = (username: string) => {
+    return username
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  // Show loading state if user data is being fetched
+  if (isUserLoading) {
+    return (
+      <div className="container py-6 space-y-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1f4140] mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading your profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show registration prompt if user is not registered
+  if (!userProfile?.isRegistered) {
+    return (
+      <div className="container py-6 space-y-8">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-[#1f4140] mb-4">Complete Your Registration</h2>
+          <p className="text-neutral-600 mb-6">
+            You need to register to view your profile and start battling.
+          </p>
+          <Button size="lg" onClick={() => window.location.href = '/home'}>
+            Go to Registration
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -26,7 +79,9 @@ export default function ProfilePage() {
         <div className="h-48 w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600"></div>
         <div className="absolute -bottom-16 left-8">
           <Avatar className="h-32 w-32 border-4 border-background">
-            <AvatarFallback className="bg-pink-500 text-2xl">JD</AvatarFallback>
+            <AvatarFallback className="bg-pink-500 text-2xl">
+              {userProfile ? getInitials(userProfile.username) : 'U'}
+            </AvatarFallback>
           </Avatar>
         </div>
       </div>
@@ -34,9 +89,13 @@ export default function ProfilePage() {
       {/* Profile Info */}
       <div className="pt-16 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Jazz Diva</h1>
+          <h1 className="text-3xl font-bold">
+            {isUserLoading ? 'Loading...' : userProfile?.username || 'Unregistered User'}
+          </h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-muted-foreground">@jazz_diva</span>
+            <span className="text-muted-foreground">
+              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+            </span>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyAddress}>
               <Copy className="h-4 w-4" />
               <span className="sr-only">Copy address</span>
@@ -46,15 +105,15 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2 mt-2">
             <Badge variant="outline" className="gap-1">
               <Users className="h-3 w-3" />
-              1.2K Followers
+              {userProfile?.reputation.toString() || '0'} Reputation
             </Badge>
             <Badge variant="outline" className="gap-1">
               <Trophy className="h-3 w-3" />
-              32 Wins
+              {userProfile?.totalWins.toString() || '0'} Wins
             </Badge>
             <Badge variant="outline" className="gap-1">
               <Swords className="h-3 w-3" />
-              54 Battles
+              {userProfile?.totalBattles.toString() || '0'} Battles
             </Badge>
           </div>
         </div>
@@ -79,11 +138,15 @@ export default function ProfilePage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">$CLASH Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">$CLASH Points</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,250</div>
-            <p className="text-xs text-muted-foreground mt-1">+125 earned this week</p>
+            <div className="text-2xl font-bold">
+              {isUserLoading ? '...' : userProfile?.points.toString() || '0'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {userProfile?.points.toString() || '0'} total points earned
+            </p>
           </CardContent>
         </Card>
 
@@ -92,8 +155,13 @@ export default function ProfilePage() {
             <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">59%</div>
-            <Progress value={59} className="h-2 mt-2" />
+            <div className="text-2xl font-bold">
+              {isUserLoading ? '...' : `${winRate}%`}
+            </div>
+            <Progress value={winRate} className="h-2 mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {userProfile?.totalWins.toString() || '0'} wins out of {userProfile?.totalBattles.toString() || '0'} battles
+            </p>
           </CardContent>
         </Card>
 
@@ -102,10 +170,16 @@ export default function ProfilePage() {
             <CardTitle className="text-sm font-medium">Reputation Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">875</div>
+            <div className="text-2xl font-bold">
+              {isUserLoading ? '...' : userProfile?.reputation.toString() || '0'}
+            </div>
             <div className="flex items-center gap-1 mt-1">
               <Award className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs">Gold Tier Creator</span>
+              <span className="text-xs">
+                {Number(userProfile?.reputation || 0) >= 1000 ? 'Gold Tier Creator' : 
+                 Number(userProfile?.reputation || 0) >= 500 ? 'Silver Tier Creator' : 
+                 Number(userProfile?.reputation || 0) >= 100 ? 'Bronze Tier Creator' : 'New Creator'}
+              </span>
             </div>
           </CardContent>
         </Card>

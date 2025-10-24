@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navigation from "@/components/navigation"
+import { WalletProvider } from "@/components/wallet-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,10 +23,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
-            <Navigation />
-            <main>{children}</main>
-          </div>
+          <WalletProvider>
+            <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
+              <Navigation />
+              <main>{children}</main>
+            </div>
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>
