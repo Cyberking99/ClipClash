@@ -12,7 +12,7 @@ import { HeroPlayerCard } from "@/components/hero-player-card"
 import { BattleHeroCard } from "@/components/battle-hero-card"
 import { IPFSVideoPlayer } from "@/components/ipfs-video-player"
 import { useAccount } from "wagmi"
-import { useBattle, useUser, useLeaderboard, useBattlesList, getBattleStatus, useIPFSUpload } from "@/hooks"
+import { useBattle, useUser, useLeaderboard, useBattlesList, getBattleStatus, useIPFSUpload, useFarcasterMiniApp } from "@/hooks"
 import { Progress } from "@/components/ui/progress"
 import { RegisterModal } from "@/components/register-modal"
 
@@ -30,6 +30,9 @@ export default function Home() {
   
   // Get user data
   const { userProfile, isLoading: isUserLoading, refetchProfile } = useUser()
+  
+  // Get Farcaster Mini App data
+  const { user: farcasterUser, shareContent, showToast } = useFarcasterMiniApp()
   
   // Get trending battles
   const { battles, isLoading: isBattlesLoading } = useBattlesList(6)
@@ -55,6 +58,17 @@ export default function Home() {
     // Set video source if provided
     if (ipfsHash && videoRef.current) {
       videoRef.current.src = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
+    }
+  }
+
+  const handleShareBattle = async (battle: any) => {
+    try {
+      const shareText = `🔥 Check out this ${battle.category} battle on ClipClash! Battle #${battle.battleId} - ${Number(battle.votes1) + Number(battle.votes2)} votes so far! 🎬`
+      await shareContent(shareText)
+      await showToast('Battle shared successfully!')
+    } catch (error) {
+      console.error('Failed to share battle:', error)
+      await showToast('Failed to share battle')
     }
   }
 
@@ -206,6 +220,7 @@ export default function Home() {
                 onPlay={() => {
                   openPreview(`${userLiveBattle.category} Battle #${userLiveBattle.battleId}`, userLiveBattle.ipfsHash1)
                 }}
+                onShare={() => handleShareBattle(userLiveBattle)}
               />
             </div>
           ) : liveBattles.length > 0 ? (
@@ -235,6 +250,7 @@ export default function Home() {
                 onPlay={() => {
                   openPreview(`${liveBattles[0].category} Battle #${liveBattles[0].battleId}`, liveBattles[0].ipfsHash1)
                 }}
+                onShare={() => handleShareBattle(liveBattles[0])}
               />
             </div>
           ) : (

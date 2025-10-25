@@ -32,6 +32,8 @@ export { useIPFSUpload, useBattleVideoUpload } from './use-ipfs-upload';
 // Token balance hooks
 export { useTokenBalance, useTokenInfo } from './use-token-balance';
 
+// Farcaster Mini App hooks
+export { useFarcasterMiniApp } from './use-farcaster-miniapp';
 
 // Existing hooks
 export { useToast } from './use-toast';
