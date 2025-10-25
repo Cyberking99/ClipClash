@@ -3,7 +3,7 @@
 import { IPFSVideoPlayer } from "@/components/ipfs-video-player"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Play, Vote, Users, Clock, Trophy } from "lucide-react"
+import { Play, Vote, Users, Clock, Trophy, Share2 } from "lucide-react"
 import { Battle } from "@/hooks"
 import { getBattleStatus, formatTimeRemaining } from "@/hooks"
 import { useReadContract } from "wagmi"
@@ -16,6 +16,7 @@ export type BattleHeroCardProps = {
   onVote?: (creator: string) => void
   onJoin?: () => void
   onPlay?: () => void
+  onShare?: () => void
 }
 
 export function BattleHeroCard({ 
@@ -23,7 +24,8 @@ export function BattleHeroCard({
   isUserBattle = false, 
   onVote, 
   onJoin, 
-  onPlay 
+  onPlay,
+  onShare
 }: BattleHeroCardProps) {
   const status = getBattleStatus(battle)
   const leftVotes = Number(battle.votes1)
@@ -252,6 +254,12 @@ export function BattleHeroCard({
             <Play className="h-4 w-4" />
             Watch 15s Preview
           </Button>
+          {onShare && (
+            <Button variant="outline" className="gap-2" onClick={onShare}>
+              <Share2 className="h-4 w-4" />
+              Share Battle
+            </Button>
+          )}
         </div>
 
         {/* Battle Stats */}

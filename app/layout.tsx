@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navigation from "@/components/navigation"
 import { WalletProvider } from "@/components/wallet-provider"
+import { FarcasterMiniAppProvider } from "@/components/farcaster-miniapp-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,12 +24,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <WalletProvider>
-            <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
-              <Navigation />
-              <main>{children}</main>
-            </div>
-          </WalletProvider>
+          <FarcasterMiniAppProvider>
+            <WalletProvider>
+              <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
+                <Navigation />
+                <main>{children}</main>
+              </div>
+            </WalletProvider>
+          </FarcasterMiniAppProvider>
         </ThemeProvider>
       </body>
     </html>
