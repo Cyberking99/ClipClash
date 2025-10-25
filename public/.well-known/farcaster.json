@@ -1,0 +1,23 @@
+{
+    "frame": {
+      "name": "ClipClash",
+      "version": "1",
+      "iconUrl": "https://clipclash.vercel.app/Logo2.png",
+      "homeUrl": "https://clipclash.vercel.app",
+      "imageUrl": "https://clipclash.vercel.app/Logo1.png",
+      "splashImageUrl": "https://clipclash.vercel.app/splash.jpg",
+      "splashBackgroundColor": "#6200EA",
+      "webhookUrl": "https://clipclash.vercel.app/api/webhook",
+      "subtitle": "Compete. Vote. Earn",
+      "description": "Creators compete, fans vote, all on-chain",
+      "screenshotUrls": [
+        "https://clipclash.vercel.app/Logo1.png"
+      ],
+      "primaryCategory": "social"
+    },
+    "accountAssociation": {
+      "header": "eyJmaWQiOjEwNTkzNDUsInR5cGUiOiJhdXRoIiwia2V5IjoiMHg2MDY0NkMyRWM3NjIzRDM2NTU3NTg1MDU4M2Y3QTc0QkI0NGM2OWRiIn0",
+      "payload": "eyJkb21haW4iOiJjbGlwY2xhc2gudmVyY2VsLmFwcCJ9",
+      "signature": "NlsB2SpjX8HIh2LuaCNaTuPskgIBa1IiY5U1/p68pPlm+Vh9SeRyObC8W/y/j+wsUjFmfk+Oq1hfrGfabxN4+xs="
+    }
+  }

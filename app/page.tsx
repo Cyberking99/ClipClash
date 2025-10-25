@@ -13,10 +13,9 @@ export default function Landing() {
   const { address, isConnected } = useAccount()
   const [showRegisterModal, setShowRegisterModal] = useState(false)
 
-  // Get battle data
   const { battleCount } = useBattle()
 
-  // Get leaderboard data
+
   const { totalUsers: leaderboardUsers } = useLeaderboard()
   return (
     <div className="min-h-screen bg-[#f9f8f8]">
@@ -56,8 +55,8 @@ export default function Landing() {
           </div>
         </section>
 
-         <div>
-           <Image src="/dancer2.png" alt="Hero" width={1000} height={1000} />
+         <div className="flex justify-center h-96">
+           <Image src="/dancer2.png" alt="Hero" width={1000} height={1000}  className="object-contain h-full"/>
          </div>
       </div>
       
